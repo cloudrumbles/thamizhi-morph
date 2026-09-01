@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "thamizhi-morph"
+version = "2.0.0a1"
+description = "A modern Python runtime and service layer for the ThamizhiMorph Tamil morphological analyser and generator"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "K. Sarveswaran" },
+  { name = "ThamizhiMorph contributors" },
+]
+keywords = ["Tamil", "morphology", "finite-state transducer", "NLP", "linguistics"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Natural Language :: Tamil",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Text Processing :: Linguistic",
+]
+dependencies = []
+
+[project.optional-dependencies]
+api = [
+  "fastapi>=0.115",
+  "uvicorn>=0.34",
+]
+context = [
+  "stanza>=1.9",
+]
+dev = [
+  "mypy>=1.14",
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "httpx>=0.28",
+  "ruff>=0.9",
+]
+
+[project.scripts]
+thamizhi-morph = "thamizhi_morph.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/cloudrumbles/thamizhi-morph"
+Repository = "https://github.com/cloudrumbles/thamizhi-morph"
+Issues = "https://github.com/cloudrumbles/thamizhi-morph/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/thamizhi_morph"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["thamizhi_morph"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 85
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+pretty = true
+show_error_codes = true
+files = ["src/thamizhi_morph"]
