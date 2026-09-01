@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thamizhimorph"
+version = "0.2.0"
+description = "Tamil finite-state morphological analysis and generation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+  {name = "K. Sarveswaran", email = "iamsarves@gmail.com"},
+]
+keywords = ["Tamil", "morphology", "NLP", "finite-state transducer", "Foma"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: Tamil",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Text Processing :: Linguistic",
+]
+dependencies = []
+
+[project.optional-dependencies]
+api = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+]
+nlp = [
+  "stanza>=1.8",
+]
+dev = [
+  "build>=1.2",
+  "httpx>=0.28",
+  "pytest>=8.3",
+  "ruff>=0.9",
+]
+
+[project.scripts]
+thamizhimorph = "thamizhimorph.cli:main"
+
+[project.urls]
+Repository = "https://github.com/cloudrumbles/thamizhi-morph"
+Paper = "https://doi.org/10.1007/s10590-021-09261-5"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"thamizhimorph" = ["py.typed"]
+"thamizhimorph.resources" = ["models/*.fst", "models/*.json", "models/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "integration: requires the native Foma executable and real compiled models",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = [
+  "Generated-Verbs",
+  "Lexicons",
+  "foma",
+  "thamizhi-morph-parsing.py",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

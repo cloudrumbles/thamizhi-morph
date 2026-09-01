@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: ThamizhiMorph
+message: >-
+  Please cite the Machine Translation paper when using the analyser, generator,
+  transducers, or derived linguistic resources.
+type: software
+version: 0.2.0
+license: Apache-2.0
+repository-code: https://github.com/cloudrumbles/thamizhi-morph
+authors:
+  - family-names: Sarveswaran
+    given-names: Kengatharaiyer
+    email: iamsarves@gmail.com
+preferred-citation:
+  type: article
+  title: "ThamizhiMorph: A morphological parser for the Tamil language"
+  authors:
+    - family-names: Sarveswaran
+      given-names: Kengatharaiyer
+    - family-names: Dias
+      given-names: Gihan
+    - family-names: Butt
+      given-names: Miriam
+  journal: Machine Translation
+  volume: 35
+  start: 37
+  end: 70
+  year: 2021
+  doi: 10.1007/s10590-021-09261-5
