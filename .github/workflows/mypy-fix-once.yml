@@ -1,0 +1,233 @@
+name: mypy-fix-once
+
+on:
+  push:
+    branches: ["codex/thamizhi-morph-v2"]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Apply strict typing fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str, count: int = 1) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f"{path}: expected {count} occurrence(s), found {actual}: {old!r}")
+              file.write_text(text.replace(old, new), encoding="utf-8")
+
+          replace(
+              "src/thamizhi_morph/context.py",
+              "            import stanza\n",
+              "            import stanza  # type: ignore[import-not-found]\n",
+          )
+
+          engine = "src/thamizhi_morph/engine.py"
+          replace(engine, "from typing import Any\n", "from typing import Any, TypeAlias\n")
+          replace(
+              engine,
+              "from .normalization import classify_token, normalize_text, tokenize\n\n_POS_COMPATIBILITY",
+              "from .normalization import classify_token, normalize_text, tokenize\n\n_CacheKey: TypeAlias = tuple[str, str, str | None, bool, bool]\n\n_POS_COMPATIBILITY",
+          )
+          replace(
+              engine,
+              "self._items: OrderedDict[tuple[object, ...], _CachedCandidates] = OrderedDict()",
+              "self._items: OrderedDict[_CacheKey, _CachedCandidates] = OrderedDict()",
+          )
+          replace(engine, "def get(self, key: tuple[object, ...])", "def get(self, key: _CacheKey)")
+          replace(
+              engine,
+              "def put(self, key: tuple[object, ...], value: _CachedCandidates)",
+              "def put(self, key: _CacheKey, value: _CachedCandidates)",
+          )
+          replace(
+              engine,
+              '''        for index, word in enumerate(words):
+            normalized = normalize_text(word)
+            warnings: list[str] = []
+            if normalized.changed:
+                warnings.append("input was Unicode-normalized")
+            if normalized.removed_codepoints:
+                warnings.append(
+                    "removed invisible formatting characters: "
+                    + ", ".join(normalized.removed_codepoints)
+                )
+            records.append(
+                (
+                    word,
+                    normalized.normalized,
+                    classify_token(normalized.normalized),
+                    pos_hints[index] if pos_hints is not None else None,
+                    tuple(warnings),
+                )
+            )
+
+        candidate_by_key: dict[tuple[object, ...], _CachedCandidates] = {}
+        pending_keys: list[tuple[object, ...]] = []
+        for _word, normalized, kind, pos_hint, _warnings in records:
+            key = (normalized, kind.value, pos_hint, use_guessers, enrich_dictionary)
+''',
+              '''        for index, word in enumerate(words):
+            normalization = normalize_text(word)
+            warnings: list[str] = []
+            if normalization.changed:
+                warnings.append("input was Unicode-normalized")
+            if normalization.removed_codepoints:
+                warnings.append(
+                    "removed invisible formatting characters: "
+                    + ", ".join(normalization.removed_codepoints)
+                )
+            normalized_word = normalization.normalized
+            records.append(
+                (
+                    word,
+                    normalized_word,
+                    classify_token(normalized_word),
+                    pos_hints[index] if pos_hints is not None else None,
+                    tuple(warnings),
+                )
+            )
+
+        candidate_by_key: dict[_CacheKey, _CachedCandidates] = {}
+        pending_keys: list[_CacheKey] = []
+        for _word, normalized_word, kind, pos_hint, _warnings in records:
+            key: _CacheKey = (
+                normalized_word,
+                kind.value,
+                pos_hint,
+                use_guessers,
+                enrich_dictionary,
+            )
+''',
+          )
+          replace(
+              engine,
+              "dict.fromkeys(str(key[0]) for key in pending_keys if key[1] == TokenKind.TAMIL.value)",
+              "dict.fromkeys(key[0] for key in pending_keys if key[1] == TokenKind.TAMIL.value)",
+          )
+          replace(
+              engine,
+              '''        for key in pending_keys:
+            normalized = str(key[0])
+            kind = TokenKind(str(key[1]))
+            pos_hint = key[2] if isinstance(key[2], str) else None
+            base_warnings: list[str] = []
+
+            if kind is not TokenKind.TAMIL:
+                analyses = self._synthetic(normalized, kind)
+            else:
+                source = known.get(normalized, ())
+                if not source:
+                    source = guessed.get(normalized, ())
+''',
+              '''        for key in pending_keys:
+            normalized_word, kind_value, pos_hint, _use_guessers, _enrich_dictionary = key
+            kind = TokenKind(kind_value)
+            base_warnings: list[str] = []
+
+            if kind is not TokenKind.TAMIL:
+                analyses = self._synthetic(normalized_word, kind)
+            else:
+                source = known.get(normalized_word, ())
+                if not source:
+                    source = guessed.get(normalized_word, ())
+''',
+          )
+          replace(
+              engine,
+              '''                if not analyses:
+                    glosses = tuple(dictionary_matches.get(normalized, ()))
+                    if glosses:
+                        analyses = (self._dictionary_fallback(normalized, glosses),)
+''',
+              '''                if not analyses:
+                    glosses = tuple(dictionary_matches.get(normalized_word, ()))
+                    if glosses:
+                        analyses = (self._dictionary_fallback(normalized_word, glosses),)
+''',
+          )
+          replace(
+              engine,
+              '''        output: list[TokenAnalysis] = []
+        for word, normalized, kind, pos_hint, normalization_warnings in records:
+            key = (normalized, kind.value, pos_hint, use_guessers, enrich_dictionary)
+            candidates = candidate_by_key[key]
+            output.append(
+                TokenAnalysis(
+                    token=word,
+                    normalized=normalized,
+''',
+              '''        output: list[TokenAnalysis] = []
+        for word, normalized_word, kind, pos_hint, normalization_warnings in records:
+            key = (normalized_word, kind.value, pos_hint, use_guessers, enrich_dictionary)
+            candidates = candidate_by_key[key]
+            output.append(
+                TokenAnalysis(
+                    token=word,
+                    normalized=normalized_word,
+''',
+          )
+
+          api = "src/thamizhi_morph/api.py"
+          for decorator in (
+              '    @app.get("/healthz")\n',
+              '    @app.post("/v1/analyze")\n',
+              '    @app.post("/v1/generate")\n',
+              '    @app.get("/v1/dictionary/{headword}")\n',
+          ):
+              replace(api, decorator, "")
+          replace(
+              api,
+              "        return {\"headword\": headword, \"entries\": [entry.to_dict() for entry in entries]}\n\n    return app\n",
+              "        return {\"headword\": headword, \"entries\": [entry.to_dict() for entry in entries]}\n\n    app.add_api_route(\"/healthz\", health, methods=[\"GET\"])\n    app.add_api_route(\"/v1/analyze\", analyze, methods=[\"POST\"])\n    app.add_api_route(\"/v1/generate\", generate, methods=[\"POST\"])\n    app.add_api_route(\"/v1/dictionary/{headword}\", dictionary, methods=[\"GET\"])\n    return app\n",
+          )
+
+          cli = "src/thamizhi_morph/cli.py"
+          replace(cli, "from typing import Any\n", "from typing import Any, cast\n")
+          replace(
+              cli,
+              '''def _read_text(args: argparse.Namespace) -> str:
+    if args.file is not None and args.text:
+        raise ValueError("provide either positional text or --file, not both")
+    if args.file is not None:
+        return args.file.read_text(encoding="utf-8")
+    if args.text:
+        return " ".join(args.text)
+    return sys.stdin.read()
+''',
+              '''def _read_text(args: argparse.Namespace) -> str:
+    file_path = cast(Path | None, args.file)
+    text_parts = cast(list[str], args.text)
+    if file_path is not None and text_parts:
+        raise ValueError("provide either positional text or --file, not both")
+    if file_path is not None:
+        return file_path.read_text(encoding="utf-8")
+    if text_parts:
+        return " ".join(text_parts)
+    return sys.stdin.read()
+''',
+          )
+          PY
+          python -m compileall -q src tests
+      - name: Commit fixes
+        run: |
+          rm .github/workflows/mypy-fix-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: make the modern runtime strictly typed"
+          git push origin HEAD:${{ github.ref_name }}
