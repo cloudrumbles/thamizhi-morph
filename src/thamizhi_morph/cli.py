@@ -6,7 +6,7 @@ import os
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from . import __version__
 from .backends.base import BackendError
@@ -90,12 +90,14 @@ def _engine(args: argparse.Namespace) -> MorphologyEngine:
 
 
 def _read_text(args: argparse.Namespace) -> str:
-    if args.file is not None and args.text:
+    file_path = cast(Path | None, args.file)
+    text_parts = cast(list[str], args.text)
+    if file_path is not None and text_parts:
         raise ValueError("provide either positional text or --file, not both")
-    if args.file is not None:
-        return args.file.read_text(encoding="utf-8")
-    if args.text:
-        return " ".join(args.text)
+    if file_path is not None:
+        return file_path.read_text(encoding="utf-8")
+    if text_parts:
+        return " ".join(text_parts)
     return sys.stdin.read()
 
 

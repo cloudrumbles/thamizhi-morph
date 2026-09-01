@@ -35,7 +35,7 @@ class StanzaPosTagger:
             self._pipeline = pipeline
             return
         try:
-            import stanza
+            import stanza  # type: ignore[import-not-found]
         except ImportError as error:
             raise RuntimeError(
                 "contextual analysis needs the optional dependency: "

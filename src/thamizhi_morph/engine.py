@@ -5,7 +5,7 @@ import time
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 from .backends.base import MorphologyBackend
 from .context import PosTagger, TaggedToken
@@ -19,6 +19,8 @@ from .models import (
     TokenKind,
 )
 from .normalization import classify_token, normalize_text, tokenize
+
+_CacheKey: TypeAlias = tuple[str, str, str | None, bool, bool]
 
 _POS_COMPATIBILITY: dict[str, frozenset[str]] = {
     "NOUN": frozenset({"noun"}),
@@ -46,10 +48,10 @@ class _CachedCandidates:
 class _LruCache:
     def __init__(self, max_size: int) -> None:
         self.max_size = max(0, max_size)
-        self._items: OrderedDict[tuple[object, ...], _CachedCandidates] = OrderedDict()
+        self._items: OrderedDict[_CacheKey, _CachedCandidates] = OrderedDict()
         self._lock = threading.RLock()
 
-    def get(self, key: tuple[object, ...]) -> _CachedCandidates | None:
+    def get(self, key: _CacheKey) -> _CachedCandidates | None:
         if self.max_size == 0:
             return None
         with self._lock:
@@ -58,7 +60,7 @@ class _LruCache:
                 self._items.move_to_end(key)
             return value
 
-    def put(self, key: tuple[object, ...], value: _CachedCandidates) -> None:
+    def put(self, key: _CacheKey, value: _CachedCandidates) -> None:
         if self.max_size == 0:
             return
         with self._lock:
@@ -162,29 +164,36 @@ class MorphologyEngine:
 
         records: list[tuple[str, str, TokenKind, str | None, tuple[str, ...]]] = []
         for index, word in enumerate(words):
-            normalized = normalize_text(word)
+            normalization = normalize_text(word)
             warnings: list[str] = []
-            if normalized.changed:
+            if normalization.changed:
                 warnings.append("input was Unicode-normalized")
-            if normalized.removed_codepoints:
+            if normalization.removed_codepoints:
                 warnings.append(
                     "removed invisible formatting characters: "
-                    + ", ".join(normalized.removed_codepoints)
+                    + ", ".join(normalization.removed_codepoints)
                 )
+            normalized_word = normalization.normalized
             records.append(
                 (
                     word,
-                    normalized.normalized,
-                    classify_token(normalized.normalized),
+                    normalized_word,
+                    classify_token(normalized_word),
                     pos_hints[index] if pos_hints is not None else None,
                     tuple(warnings),
                 )
             )
 
-        candidate_by_key: dict[tuple[object, ...], _CachedCandidates] = {}
-        pending_keys: list[tuple[object, ...]] = []
-        for _word, normalized, kind, pos_hint, _warnings in records:
-            key = (normalized, kind.value, pos_hint, use_guessers, enrich_dictionary)
+        candidate_by_key: dict[_CacheKey, _CachedCandidates] = {}
+        pending_keys: list[_CacheKey] = []
+        for _word, normalized_word, kind, pos_hint, _warnings in records:
+            key: _CacheKey = (
+                normalized_word,
+                kind.value,
+                pos_hint,
+                use_guessers,
+                enrich_dictionary,
+            )
             if key in candidate_by_key:
                 continue
             cached = self._cache.get(key)
@@ -194,7 +203,7 @@ class MorphologyEngine:
                 candidate_by_key[key] = cached
 
         tamil_words = tuple(
-            dict.fromkeys(str(key[0]) for key in pending_keys if key[1] == TokenKind.TAMIL.value)
+            dict.fromkeys(key[0] for key in pending_keys if key[1] == TokenKind.TAMIL.value)
         )
         known = self.backend.analyze_many(tamil_words, guess=False) if tamil_words else {}
         unknown_words = tuple(word for word in tamil_words if not known.get(word))
@@ -215,17 +224,16 @@ class MorphologyEngine:
             dictionary_matches = {}
 
         for key in pending_keys:
-            normalized = str(key[0])
-            kind = TokenKind(str(key[1]))
-            pos_hint = key[2] if isinstance(key[2], str) else None
+            normalized_word, kind_value, pos_hint, _use_guessers, _enrich_dictionary = key
+            kind = TokenKind(kind_value)
             base_warnings: list[str] = []
 
             if kind is not TokenKind.TAMIL:
-                analyses = self._synthetic(normalized, kind)
+                analyses = self._synthetic(normalized_word, kind)
             else:
-                source = known.get(normalized, ())
+                source = known.get(normalized_word, ())
                 if not source:
-                    source = guessed.get(normalized, ())
+                    source = guessed.get(normalized_word, ())
                     if source:
                         base_warnings.append("analysis produced by an out-of-vocabulary guesser")
                 enriched: list[MorphAnalysis] = []
@@ -235,9 +243,9 @@ class MorphologyEngine:
                 analyses = tuple(enriched)
 
                 if not analyses:
-                    glosses = tuple(dictionary_matches.get(normalized, ()))
+                    glosses = tuple(dictionary_matches.get(normalized_word, ()))
                     if glosses:
-                        analyses = (self._dictionary_fallback(normalized, glosses),)
+                        analyses = (self._dictionary_fallback(normalized_word, glosses),)
                         base_warnings.append(
                             "dictionary-only fallback; no inflectional morphology was recovered"
                         )
@@ -250,13 +258,13 @@ class MorphologyEngine:
             self._cache.put(key, value)
 
         output: list[TokenAnalysis] = []
-        for word, normalized, kind, pos_hint, normalization_warnings in records:
-            key = (normalized, kind.value, pos_hint, use_guessers, enrich_dictionary)
+        for word, normalized_word, kind, pos_hint, normalization_warnings in records:
+            key = (normalized_word, kind.value, pos_hint, use_guessers, enrich_dictionary)
             candidates = candidate_by_key[key]
             output.append(
                 TokenAnalysis(
                     token=word,
-                    normalized=normalized,
+                    normalized=normalized_word,
                     kind=kind,
                     analyses=candidates.analyses,
                     selected=0 if candidates.analyses else None,

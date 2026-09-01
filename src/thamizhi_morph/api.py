@@ -32,11 +32,9 @@ def create_app(engine: MorphologyEngine | None = None) -> Any:
     )
     runtime = engine or default_engine()
 
-    @app.get("/healthz")
     def health() -> dict[str, Any]:
         return runtime.health()
 
-    @app.post("/v1/analyze")
     def analyze(payload: dict[str, Any]) -> dict[str, Any]:
         text = payload.get("text")
         if not isinstance(text, str) or not text:
@@ -63,7 +61,6 @@ def create_app(engine: MorphologyEngine | None = None) -> Any:
             )
         return result.to_dict()
 
-    @app.post("/v1/generate")
     def generate(payload: dict[str, Any]) -> dict[str, Any]:
         forms = payload.get("lexical_forms")
         if not isinstance(forms, list) or not all(isinstance(item, str) for item in forms):
@@ -78,11 +75,14 @@ def create_app(engine: MorphologyEngine | None = None) -> Any:
             raise fastapi.HTTPException(status_code=422, detail="model must be a string")
         return {"forms": runtime.generate_many(forms, model=model)}
 
-    @app.get("/v1/dictionary/{headword}")
     def dictionary(headword: str, limit: int = 16) -> dict[str, Any]:
         if runtime.dictionary is None:
             raise fastapi.HTTPException(status_code=404, detail="dictionary is not configured")
         entries = runtime.dictionary.lookup(headword, limit=min(max(limit, 1), 100))
         return {"headword": headword, "entries": [entry.to_dict() for entry in entries]}
 
+    app.add_api_route("/healthz", health, methods=["GET"])
+    app.add_api_route("/v1/analyze", analyze, methods=["POST"])
+    app.add_api_route("/v1/generate", generate, methods=["POST"])
+    app.add_api_route("/v1/dictionary/{headword}", dictionary, methods=["GET"])
     return app
