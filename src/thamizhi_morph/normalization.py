@@ -9,7 +9,7 @@ from .models import TextToken, TokenKind
 _TAMIL_START = 0x0B80
 _TAMIL_END = 0x0BFF
 _INVISIBLE_FORMATTING = frozenset({"\ufeff", "\u200b", "\u2060", "\u00ad"})
-_TOKEN_PATTERN = re.compile(r"[\u0B80-\u0BFF]+|[^\W_]+(?:['’][^\W_]+)*|[^\s]", re.UNICODE)
+_TOKEN_PATTERN = re.compile(r"[\u0B80-\u0BFF]+|[^\W_]+(?:['\u2019][^\W_]+)*|[^\s]", re.UNICODE)
 
 
 @dataclass(frozen=True, slots=True)

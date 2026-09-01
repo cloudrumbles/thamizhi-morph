@@ -59,9 +59,8 @@ def test_lookup_many_and_prefix_search(dictionary_db: Path) -> None:
 
 
 def test_dictionary_is_read_only(dictionary_db: Path) -> None:
-    with AvvaiDictionary(dictionary_db) as dictionary:
-        with pytest.raises(sqlite3.OperationalError):
-            dictionary._connect().execute("DELETE FROM words")  # noqa: SLF001
+    with AvvaiDictionary(dictionary_db) as dictionary, pytest.raises(sqlite3.OperationalError):
+        dictionary._connect().execute("DELETE FROM words")
 
 
 def test_invalid_schema_is_rejected(tmp_path: Path) -> None:

@@ -111,9 +111,7 @@ class MorphologyEngine:
             score = 100.0 if not analysis.guessed else 35.0
         if pos_hint:
             compatible = _POS_COMPATIBILITY.get(pos_hint.upper(), frozenset())
-            if analysis.pos in compatible:
-                score += 50.0
-            elif analysis.pos == pos_hint.lower():
+            if analysis.pos in compatible or analysis.pos == pos_hint.lower():
                 score += 50.0
             else:
                 score -= 15.0

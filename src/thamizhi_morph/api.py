@@ -37,7 +37,7 @@ def create_app(engine: MorphologyEngine | None = None) -> Any:
         return runtime.health()
 
     @app.post("/v1/analyze")
-    def analyze(payload: dict[str, Any] = fastapi.Body(...)) -> dict[str, Any]:
+    def analyze(payload: dict[str, Any]) -> dict[str, Any]:
         text = payload.get("text")
         if not isinstance(text, str) or not text:
             raise fastapi.HTTPException(status_code=422, detail="text must be a non-empty string")
@@ -64,7 +64,7 @@ def create_app(engine: MorphologyEngine | None = None) -> Any:
         return result.to_dict()
 
     @app.post("/v1/generate")
-    def generate(payload: dict[str, Any] = fastapi.Body(...)) -> dict[str, Any]:
+    def generate(payload: dict[str, Any]) -> dict[str, Any]:
         forms = payload.get("lexical_forms")
         if not isinstance(forms, list) or not all(isinstance(item, str) for item in forms):
             raise fastapi.HTTPException(
