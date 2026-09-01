@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "description": "Packaged ThamizhiMorph Foma models in deterministic lookup order.",
+  "exact": [
+    {"file": "pronoun.fst", "pos": ["PRON", "DET"], "priority": 10},
+    {"file": "verb-c3.fst", "pos": ["VERB", "AUX"], "priority": 20},
+    {"file": "verb-c4.fst", "pos": ["VERB", "AUX"], "priority": 21},
+    {"file": "verb-c62.fst", "pos": ["VERB", "AUX"], "priority": 22},
+    {"file": "verb-c11.fst", "pos": ["VERB", "AUX"], "priority": 23},
+    {"file": "verb-c12.fst", "pos": ["VERB", "AUX"], "priority": 24},
+    {"file": "verb-c-rest.fst", "pos": ["VERB", "AUX"], "priority": 29},
+    {"file": "noun.fst", "pos": ["NOUN", "PROPN"], "priority": 40},
+    {"file": "adj.fst", "pos": ["ADJ"], "priority": 50},
+    {"file": "adv.fst", "pos": ["ADV"], "priority": 60},
+    {"file": "part.fst", "pos": ["ADP", "CCONJ", "DET", "NUM", "PART", "SCONJ"], "priority": 70}
+  ],
+  "guessers": [
+    {"file": "verb-guess.fst", "pos": ["VERB", "AUX"], "priority": 120},
+    {"file": "noun-guess.fst", "pos": ["NOUN", "PROPN", "PRON"], "priority": 130},
+    {"file": "adj-guess.fst", "pos": ["ADJ"], "priority": 140},
+    {"file": "adv-guess.fst", "pos": ["ADV"], "priority": 150},
+    {
+      "file": "adverb-guesser.fst",
+      "pos": ["ADV"],
+      "priority": 151,
+      "enabled": false,
+      "note": "Retained as a legacy duplicate but not queried by default."
+    }
+  ]
+}
