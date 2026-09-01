@@ -174,7 +174,7 @@ def test_text_analysis_offsets_synthetic_tokens_and_cache() -> None:
     ]
     assert first.tokens[1].best is not None and first.tokens[1].best.pos == "punct"
     assert second.tokens[0].best == first.tokens[0].best
-    assert backend.calls == [(('மரங்கள்',), False)]
+    assert backend.calls == [(("மரங்கள்",), False)]
 
 
 def test_contextual_analysis_and_generation() -> None:

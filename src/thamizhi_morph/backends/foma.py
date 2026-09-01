@@ -213,7 +213,9 @@ class FomaBackend:
                         merged[word].append(analysis)
         return {word: tuple(merged[word]) for word in values}
 
-    def _run_generation(self, model: FomaModel, values: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
+    def _run_generation(
+        self, model: FomaModel, values: tuple[str, ...]
+    ) -> dict[str, tuple[str, ...]]:
         parsed = parse_generation_output(self._run(model, values, inverse=True))
         if parsed.diagnostics:
             message = "; ".join(parsed.diagnostics)

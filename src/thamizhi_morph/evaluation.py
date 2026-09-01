@@ -75,11 +75,9 @@ def evaluate_words(
     elapsed = time.perf_counter() - started
     classes = Counter(_classification(token) for token in results)
     kinds = Counter(token.kind.value for token in results)
-    unknown = tuple(
-        token.token
-        for token in results
-        if _classification(token) == "unknown"
-    )[:max_unknown_words]
+    unknown = tuple(token.token for token in results if _classification(token) == "unknown")[
+        :max_unknown_words
+    ]
     total = len(results)
     return CoverageReport(
         total=total,

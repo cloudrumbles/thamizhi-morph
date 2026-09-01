@@ -106,7 +106,9 @@ class AvvaiDictionary:
         *,
         limit_per_word: int = 16,
     ) -> Mapping[str, tuple[Gloss, ...]]:
-        normalized = tuple(dict.fromkeys(normalize_text(word).normalized for word in headwords if word))
+        normalized = tuple(
+            dict.fromkeys(normalize_text(word).normalized for word in headwords if word)
+        )
         output: dict[str, list[Gloss]] = {word: [] for word in normalized}
         if not normalized:
             return {}

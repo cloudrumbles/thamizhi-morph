@@ -127,7 +127,10 @@ class MorphologyEngine:
         analyses: Sequence[MorphAnalysis],
         pos_hint: str | None,
     ) -> tuple[MorphAnalysis, ...]:
-        scored = [analysis.with_score(cls._score(analysis, pos_hint, index)) for index, analysis in enumerate(analyses)]
+        scored = [
+            analysis.with_score(cls._score(analysis, pos_hint, index))
+            for index, analysis in enumerate(analyses)
+        ]
         return tuple(sorted(scored, key=lambda item: item.score, reverse=True))
 
     @staticmethod

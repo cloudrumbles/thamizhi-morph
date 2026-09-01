@@ -37,9 +37,13 @@ def _parser() -> argparse.ArgumentParser:
     analyze = commands.add_parser("analyze", help="analyse text from arguments, a file, or stdin")
     analyze.add_argument("text", nargs="*")
     analyze.add_argument("--file", type=Path)
-    analyze.add_argument("--format", choices=("pretty", "json", "jsonl", "conllu"), default="pretty")
+    analyze.add_argument(
+        "--format", choices=("pretty", "json", "jsonl", "conllu"), default="pretty"
+    )
     analyze.add_argument("--pos", help="UPOS hint for a single input word, such as NOUN or VERB")
-    analyze.add_argument("--contextual", action="store_true", help="rank analyses with optional Stanza POS tags")
+    analyze.add_argument(
+        "--contextual", action="store_true", help="rank analyses with optional Stanza POS tags"
+    )
     analyze.add_argument("--no-guessers", action="store_true")
     analyze.add_argument("--enrich-dictionary", action="store_true")
     analyze.add_argument("--all", action="store_true", help="show every candidate in pretty output")
@@ -54,7 +58,9 @@ def _parser() -> argparse.ArgumentParser:
     lookup.add_argument("--prefix", action="store_true")
     lookup.add_argument("--limit", type=int, default=20)
 
-    benchmark = commands.add_parser("benchmark", help="measure coverage and throughput on a word list")
+    benchmark = commands.add_parser(
+        "benchmark", help="measure coverage and throughput on a word list"
+    )
     benchmark.add_argument("wordlist", type=Path)
     benchmark.add_argument("--limit", type=int)
     benchmark.add_argument("--no-guessers", action="store_true")
@@ -98,10 +104,13 @@ def _pretty_token(token: TokenAnalysis, *, show_all: bool) -> str:
     candidates = token.analyses if show_all else token.analyses[:1]
     for index, analysis in enumerate(candidates):
         marker = "*" if index == token.selected else "-"
-        morphology = ", ".join(
-            item.label if item.surface is None else f"{item.label}={item.surface}"
-            for item in analysis.morphemes
-        ) or "—"
+        morphology = (
+            ", ".join(
+                item.label if item.surface is None else f"{item.label}={item.surface}"
+                for item in analysis.morphemes
+            )
+            or "—"
+        )
         source = analysis.model + ("; guessed" if analysis.guessed else "")
         lines.append(
             f"  {marker} {analysis.lemma} [{analysis.pos}] {morphology} "
@@ -151,10 +160,14 @@ def _run(args: argparse.Namespace) -> int:
             if args.prefix:
                 result: Any = {
                     word: [item.to_dict() for item in entries]
-                    for word, entries in dictionary.search_prefix(args.headword, limit=args.limit).items()
+                    for word, entries in dictionary.search_prefix(
+                        args.headword, limit=args.limit
+                    ).items()
                 }
             else:
-                result = [item.to_dict() for item in dictionary.lookup(args.headword, limit=args.limit)]
+                result = [
+                    item.to_dict() for item in dictionary.lookup(args.headword, limit=args.limit)
+                ]
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
 

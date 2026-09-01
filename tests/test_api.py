@@ -17,9 +17,7 @@ class ApiBackend:
         guess: bool = False,
     ) -> dict[str, tuple[MorphAnalysis, ...]]:
         return {
-            word: (
-                MorphAnalysis(word, "தமிழ்", "noun", model="noun", guessed=guess),
-            )
+            word: (MorphAnalysis(word, "தமிழ்", "noun", model="noun", guessed=guess),)
             if word == "தமிழ்"
             else ()
             for word in words
