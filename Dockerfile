@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends foma-bin \
+    && apt-get install --yes --no-install-recommends foma \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
